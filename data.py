@@ -3,16 +3,14 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-
+from scipy.ndimage import distance_transform_edt
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
 from skimage import io, transform
 from skimage.color import rgb2gray
 
 
-class FaceLandmarksDataset(Dataset):
-    """Face Landmarks dataset."""
-
+class ProjectionsDataset(Dataset):
     def __init__(self, name, root_dir, size, transform=transforms.ToTensor()):
         self.root_dir = root_dir
         self.transform = transform
@@ -36,40 +34,52 @@ class FaceLandmarksDataset(Dataset):
                 continue
 
             label = np.load(label_name)
+            label = label[:,:,:-1]
 
             img1_name = f"{img_base_name}a.png"
             img2_name = f"{img_base_name}b.png"
             img3_name = f"{img_base_name}c.png"
 
-            image1 = io.imread(img1_name)[:, :, 0]
-            image2 = io.imread(img2_name)[:, :, 0]
-            image3 = io.imread(img3_name)[:, :, 0]
+            images = list(map(
+                lambda el:
+                self.transform(
+                    distance_transform_edt(
+                        io.imread(el)[:, :, 0]
+                    )
+                ),
+                (img1_name, img2_name, img3_name)
+            ))
 
-            image1 = self.transform(image1)
-            image2 = self.transform(image2)
-            image3 = self.transform(image3)
+            channels = torch.vstack(list(images))
 
-            sample = {'projection_a': image1,"projection_b": image2, "projection_c": image3, 'label': label}
-            return sample 
-
-
-def load_data(batch_size):
-
-    data_train = FaceLandmarksDataset("train", "data/train", size=1000)
-    dl_train = DataLoader(data_train, batch_size=batch_size, shuffle=True)
-
-    return (data_train, dl_train)
+            sample = {'images': channels, 'label': label}
+            return channels, label
 
 
-def show_images(dataset, num_samples=20, cols=4):
+def load_train(batch_size):
+    return __load(batch_size, "train", 1000, shuffle=True)
+
+
+def load_test(batch_size):
+    return __load(batch_size, "test", 100, shuffle=False)
+
+
+def __load(batch_size, name, size, shuffle):
+    data = ProjectionsDataset(name, f"data/{name}", size=size)
+    dl = DataLoader(data, batch_size=batch_size, shuffle=shuffle)
+    return data, dl
+
+
+def __show_images(dataset, num_samples=20, cols=4):
     plt.figure(figsize=(15,15))
     for i, sample in enumerate(dataset):
         if i == num_samples:
             break
         plt.subplot(int(num_samples/cols) + 1, cols, i + 1)
-        plt.imshow(sample["projection_c"].squeeze().cpu().numpy())
+        plt.imshow(sample[0].squeeze().cpu().numpy().T)
     plt.show()
 
+
 if __name__ == "__main__":
-    data_train, loader_train = load_data(100)
-    show_images(data_train)
+    data_train, loader_train = load_train(100)
+    __show_images(data_train)

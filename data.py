@@ -56,12 +56,12 @@ class ProjectionsDataset(Dataset):
             return channels, label
 
 
-def load_train(batch_size):
-    return __load(batch_size, "train", 1000, shuffle=True)
+def load_train(batch_size, size=1000):
+    return __load(batch_size, "train", size, shuffle=True)
 
 
-def load_test(batch_size):
-    return __load(batch_size, "test", 100, shuffle=False)
+def load_test(batch_size, size=100):
+    return __load(batch_size, "test", size, shuffle=False)
 
 
 def __load(batch_size, name, size, shuffle):

@@ -1,22 +1,29 @@
 import torch
+import torch.nn as nn
 import functools
 import numpy as np
 import matplotlib.pyplot as plt
 
 from model import CoronaryNet
-from data import load_test
+from data import load_test, load_train
 
 
-def evaluate_qualitative(model: CoronaryNet, ix):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    data_test, loader_test = load_test(100)
-
+def evaluate_qualitative(model: CoronaryNet, ix, device, data_test=load_test(100)[0], verbose=True):
+    model.to(device)
+    model.eval()
     x, gt = data_test[ix]  
-    #pred = model(x)
+
+    x = x.to(device, dtype=torch.float)
+    x = x.expand(1, -1, -1, -1)
+    pred = model(x)
+    pred = pred.reshape(model.M * model.N, 3)
+
+    output = pred.reshape(model.M, model.N, 3)
+    loss = nn.MSELoss()(output, torch.Tensor(gt))
+    if verbose: print("mse:", loss)
 
     data_flat = functools.reduce(lambda a, b: np.concatenate((a, b)), gt[1:], gt[0])    
     data_flat = data_flat[::10]
-
 
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
@@ -28,6 +35,15 @@ def evaluate_qualitative(model: CoronaryNet, ix):
         marker='o'
         )
 
+    pred = pred.detach().numpy()
+
+    ax.scatter(
+        [x for (x, _, _) in pred],
+        [y for (_, y, _) in pred],
+        [z for (_, _, z) in pred],
+        marker='x'
+    )
+
     ax.scatter(0, 0, 0, marker="s")
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -37,9 +53,13 @@ def evaluate_qualitative(model: CoronaryNet, ix):
 
 if __name__ == "__main__":
 
-    model = CoronaryNet()
-    #model.load_state_dict(torch.load("models/weights"))
+    device = torch.device("cpu")
+    model = torch.load("models/weights")
+    data_test, _ = load_test(100)
+
     evaluate_qualitative(
         model,
-        ix=0
+        ix=5,
+        device=device,
+        data_test=data_test
     )

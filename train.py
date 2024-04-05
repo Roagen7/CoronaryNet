@@ -13,11 +13,15 @@ EPOCHS=300
 BATCH_SIZE=2
 
 
-def train_model(model, criterion, optimizer):
-    _, dl_train = load_train(BATCH_SIZE)
+def train_model(model, criterion, optimizer, device, 
+dl_train=load_train(BATCH_SIZE)[1], 
+save_path="./models/weights", 
+verbose=True, 
+batch_size=BATCH_SIZE,
+epochs=EPOCHS):
     start = time.time()
     model.train()
-    for epoch in range(EPOCHS):
+    for epoch in range(epochs):
         sum_loss = 0
         ix = 0
         for inputs, labels in dl_train:
@@ -25,15 +29,15 @@ def train_model(model, criterion, optimizer):
             labels = labels.to(device, dtype=torch.float)
             optimizer.zero_grad()
             outputs = model(inputs)
-            outputs = outputs.reshape(BATCH_SIZE, model.M, model.N, 3)
+            outputs = outputs.reshape(batch_size, model.M, model.N, 3)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
             sum_loss += loss
-            print(f"epoch progress: {(ix+1)/len(dl_train) * 100}%")
+            if verbose: print(f"epoch progress: {(ix+1)/len(dl_train) * 100}% loss: {loss}")
             ix += 1
-        print(f"epoch {epoch}: loss {sum_loss}")
-        torch.save(model, "models/weights")
+        print(f"epoch {epoch+1}: loss {sum_loss}")
+        torch.save(model, save_path)
        
 
     elapsed = time.time() - start
@@ -48,5 +52,7 @@ if __name__ == "__main__":
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-    train_model(model, criterion, optimizer)
-    torch.save(model, "models/weights")
+    _, dl_train = load_train(BATCH_SIZE, size=100)
+
+    train_model(model, criterion, optimizer, dl_train=dl_train, device=device)
+    torch.save(model, "./models/weights")

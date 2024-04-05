@@ -23,7 +23,6 @@ def evaluate_qualitative(model: CoronaryNet, ix, device, data_test=load_test(100
     if verbose: print("mse:", loss)
 
     data_flat = functools.reduce(lambda a, b: np.concatenate((a, b)), gt[1:], gt[0])    
-    data_flat = data_flat[::10]
 
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
@@ -55,11 +54,11 @@ if __name__ == "__main__":
 
     device = torch.device("cpu")
     model = torch.load("models/weights")
-    data_test, _ = load_test(100)
+    data_test, _ = load_train(100)
 
     evaluate_qualitative(
         model,
-        ix=5,
+        ix=6,
         device=device,
         data_test=data_test
     )

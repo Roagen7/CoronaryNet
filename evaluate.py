@@ -11,11 +11,12 @@ from data import load_test, load_train
 def evaluate_qualitative(model: CoronaryNet, ix, device, data_test=load_test(100)[0], verbose=True):
     model.to(device)
     model.eval()
-    x, gt = data_test[ix]  
+    x, x_acq, gt = data_test[ix]  
 
     x = x.to(device, dtype=torch.float)
     x = x.expand(1, -1, -1, -1)
-    pred = model(x)
+    x_acq = x_acq.expand(1, -1, -1)
+    pred = model(x, x_acq)
     pred = pred.reshape(model.M * model.N, 3)
 
     output = pred.reshape(model.M, model.N, 3)

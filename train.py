@@ -5,7 +5,7 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 
 from data import load_train, load_test
-from model import CoronaryNet
+from model import CoronaryNet, CoronaryNet2
 from loss import arc_loss, manifold_likelihood_loss
 
 
@@ -27,11 +27,12 @@ epochs=EPOCHS):
         model.train()
         sum_loss = 0
         ix = 0
-        for inputs, labels in dl_train:
+        for inputs, params, labels in dl_train:
             inputs = inputs.to(device, dtype=torch.float)
             labels = labels.to(device, dtype=torch.float)
+            params = params.to(device, dtype=torch.float)
             optimizer.zero_grad()
-            outputs = model(inputs)
+            outputs = model(inputs, params)
             outputs = outputs.reshape(batch_size, model.M, model.N, 3)
             loss = criterion(outputs, labels)
             loss.backward()
@@ -45,11 +46,11 @@ epochs=EPOCHS):
         val_loss = 0
 
         with torch.no_grad():
-            for inputs, labels in dl_test:
+            for inputs, params, labels in dl_test:
                 inputs = inputs.to(device, dtype=torch.float)
                 labels = labels.to(device, dtype=torch.float)
-                optimizer.zero_grad()
-                outputs = model(inputs)
+                params = params.to(device, dtype=torch.float)
+                outputs = model(inputs, params)
                 outputs = outputs.reshape(batch_size, model.M, model.N, 3)
                 loss = criterion(outputs, labels)
                 val_loss += loss
@@ -72,7 +73,7 @@ epochs=EPOCHS):
 
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = CoronaryNet(instance_batch=BATCH_SIZE==1)
+    model = CoronaryNet2(instance_batch=BATCH_SIZE==1)
     model.to(device)
 
     criterion = arc_loss(lam=0.1)

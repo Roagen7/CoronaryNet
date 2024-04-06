@@ -2,6 +2,7 @@ import os
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import json
 
 from scipy.ndimage import distance_transform_edt
 from torch.utils.data import DataLoader, Dataset
@@ -20,19 +21,24 @@ class ProjectionsDataset(Dataset):
     def __len__(self):
         return self.size
 
+
     def __getitem__(self, idx):
         
+        # some data is skipped in generator due to invalid sampling so there are "holes" in dataset
         while True:
             if torch.is_tensor(idx):
                 idx = idx.tolist()
 
             img_base_name = os.path.join(self.root_dir, "images", self.name, "image{:04d}".format(idx))
             label_name = os.path.join(self.root_dir, "labels", self.name, "{:04d}.npy".format(idx))
-
+            json_name = os.path.join(self.root_dir, "info", "{:04d}.info.0".format(idx))
+            
             if not os.path.isfile(label_name):
                 idx+=1
                 continue
-
+            
+            params = self.__get_acquisition_params(json_name)
+        
             label = np.load(label_name)
             label = label[:,:,:-1]
 
@@ -52,8 +58,18 @@ class ProjectionsDataset(Dataset):
 
             channels = torch.vstack(list(images))
 
-            sample = {'images': channels, 'label': label}
-            return channels, label
+            return channels, params, label
+
+    def __get_acquisition_params(self, filename):
+        with open(filename, 'r') as f:
+            json_data = f.read()
+
+        json_parsed = json.loads(json_data)
+        return torch.Tensor([json_parsed["theta_array"], json_parsed["phi_array"]]).T
+
+
+    def __get_label(filename):
+        pass
 
 
 def load_train(batch_size, size=1000):

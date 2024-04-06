@@ -79,7 +79,7 @@ if __name__ == "__main__":
     criterion = arc_loss(lam=0.1)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-7)
 
-    _, dl_train = load_train(BATCH_SIZE, size=100)
+    _, dl_train = load_train(BATCH_SIZE, size=250)
     _, dl_test = load_test(BATCH_SIZE, size=10)
 
-    train_model(model, criterion, optimizer, dl_train=dl_train, device=device)
+    train_model(model, criterion, optimizer, dl_train=dl_train, dl_test=dl_test, device=device)

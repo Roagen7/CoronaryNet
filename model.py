@@ -61,6 +61,12 @@ class CoronaryNet2(CoronaryNet):
             nn.Linear(1024, 1024),
             nn.ReLU(),
             self.norm(1024),
+            nn.Linear(1024, 1024),
+            nn.ReLU(),
+            self.norm(1024),
+            nn.Linear(1024, 1024),
+            nn.ReLU(),
+            self.norm(1024),
             nn.Linear(1024, 512),
             nn.ReLU(),
             self.norm(512)

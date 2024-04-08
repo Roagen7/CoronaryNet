@@ -4,9 +4,9 @@ import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
-from data import load_train, load_test
-from model import CoronaryNet
-from loss import arc_loss
+from .data import load_train, load_test
+from .model import CoronaryNet
+from .loss import arc_loss
 
 
 LEARNING_RATE=1e-3

@@ -54,7 +54,7 @@ def evaluate_qualitative(model: CoronaryNet, ix, device, data_test=load_test(100
 if __name__ == "__main__":
 
     device = torch.device("cpu")
-    model = torch.load("models/weights")
+    model = torch.load("models/weights_best")
     data_test, _ = load_train(100)
 
     evaluate_qualitative(

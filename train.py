@@ -5,11 +5,11 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 
 from data import load_train, load_test
-from model import CoronaryNet, CoronaryNet2
-from loss import arc_loss, manifold_likelihood_loss
+from model import CoronaryNet
+from loss import arc_loss
 
 
-LEARNING_RATE=5e-4
+LEARNING_RATE=1e-3
 EPOCHS=300
 BATCH_SIZE=1
 
@@ -73,7 +73,8 @@ epochs=EPOCHS):
 
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = CoronaryNet2(instance_batch=BATCH_SIZE==1)
+
+    model = CoronaryNet(instance_batch=BATCH_SIZE==1)
     model.to(device)
 
     criterion = arc_loss(lam=0.1)

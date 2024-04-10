@@ -41,25 +41,37 @@ def evaluate_qualitative(model: CoronaryNet, ix, device, data_test=load_test(100
         [x for (x, _, _) in pred],
         [y for (_, y, _) in pred],
         [z for (_, _, z) in pred],
-        marker='x'
+        marker='o',
+        s=10
     )
 
     ax.scatter(0, 0, 0, marker="s")
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
-    plt.show()
+    return pred
 
 
 if __name__ == "__main__":
 
     device = torch.device("cpu")
-    model = torch.load("models/weights_best")
+    model = torch.load("models/weights")
     data_test, _ = load_train(100)
 
-    evaluate_qualitative(
+    pred1 = evaluate_qualitative(
         model,
-        ix=6,
+        ix=3,
         device=device,
         data_test=data_test
     )
+
+    pred2 = evaluate_qualitative(
+        model,
+        ix=4,
+        device=device,
+        data_test=data_test
+    )
+    loss = nn.MSELoss()(torch.Tensor(pred1), torch.Tensor(pred2))
+    print(loss)
+
+    plt.show()

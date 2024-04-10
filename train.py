@@ -4,12 +4,12 @@ import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
-from .data import load_train, load_test
-from .model import CoronaryNet
-from .loss import arc_loss
+from data import load_train, load_test
+from model import CoronaryNet
+from loss import arc_loss
 
 
-LEARNING_RATE=1e-3
+LEARNING_RATE=1e-2
 EPOCHS=300
 BATCH_SIZE=1
 
@@ -23,6 +23,7 @@ batch_size=BATCH_SIZE,
 epochs=EPOCHS):
     start = time.time()
     min_val_loss = torch.inf
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
     for epoch in range(epochs):
         model.train()
         sum_loss = 0
@@ -36,9 +37,11 @@ epochs=EPOCHS):
             outputs = outputs.reshape(batch_size, model.M, model.N, 3)
             loss = criterion(outputs, labels)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
+   
             optimizer.step()
             sum_loss += loss
-            if verbose: print(f"epoch progress: {(ix+1)/len(dl_train) * 100}% loss: {loss}")
+            if verbose and ix % 20 == 0: print(f"epoch progress: {(ix+1)/len(dl_train) * 100}% loss: {loss}")
             ix += 1
 
         model.eval()
@@ -63,24 +66,27 @@ epochs=EPOCHS):
             torch.save(model, f"{save_path}_best")
         torch.save(model, save_path)
 
-        print(f"epoch {epoch+1}: loss {sum_loss} val_loss {val_loss}")
-        
-       
+        scheduler.step(val_loss)
 
+        print(f"epoch {epoch+1}: loss {sum_loss} val_loss {val_loss} lr {scheduler.get_last_lr()}")
+        
     elapsed = time.time() - start
     print(f"Elapsed {elapsed // 60:.0f}m {elapsed % 60:.0f}s")
 
 
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    model = CoronaryNet(instance_batch=BATCH_SIZE==1)
+    print(device)
+    #model = CoronaryNet(instance_batch=BATCH_SIZE==1)
+    model = torch.load("models/weights_best")
     model.to(device)
 
-    criterion = arc_loss(lam=0.1)
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-7)
-
-    _, dl_train = load_train(BATCH_SIZE, size=250)
+    criterion1 = arc_loss(lam=0.1)
+    #criterion1 = nn.MSELoss()
+    optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=0.9)
+    _, dl_train = load_train(BATCH_SIZE, size=200)
     _, dl_test = load_test(BATCH_SIZE, size=10)
 
-    train_model(model, criterion, optimizer, dl_train=dl_train, dl_test=dl_test, device=device)
+
+    train_model(model, criterion1, optimizer, dl_train=dl_train, dl_test=dl_test, device=device, epochs=EPOCHS)
+
